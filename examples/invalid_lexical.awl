@@ -1,0 +1,4 @@
+# @ is not a valid AWL token
+WORKFLOW BadSymbol {
+    REQUEST LOGIN @
+}

@@ -1,0 +1,8 @@
+# Example valid workflow
+WORKFLOW UserManagement {
+    REQUEST LOGIN
+    SAVE token FROM LOGIN.access_token
+    REQUEST GET_PROFILE USING token
+    REQUEST UPDATE_PROFILE USING token
+    REQUEST LOGOUT USING token
+}

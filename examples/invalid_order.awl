@@ -1,0 +1,5 @@
+# Profile request occurs before login
+WORKFLOW InvalidOrder {
+    REQUEST GET_PROFILE USING token
+    REQUEST LOGIN
+}

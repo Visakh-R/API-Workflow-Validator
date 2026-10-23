@@ -1,0 +1,3 @@
+# The closing brace is missing
+WORKFLOW Broken {
+    REQUEST LOGIN

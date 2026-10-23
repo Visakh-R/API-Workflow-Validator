@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>API Workflow Validator</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <a class="brand" href="/">
+        <span class="brand-icon">⌘</span>
+        <span>FlowCheck <small>COMPILER DESIGN PROJECT</small></span>
+      </a>
+      <div class="topbar-right"><span class="live-dot"></span> Local validator</div>
+    </header>
+
+    <main>
+      <section class="hero">
+        <div class="eyebrow">DEVELOPER TOOL · AWL 1.0</div>
+        <h1>API Workflow <span>Validator</span></h1>
+        <p>Validate API workflows through lexical, syntax and semantic analysis before execution.</p>
+      </section>
+
+      <section class="workspace">
+        <div class="editor-panel panel">
+          <div class="panel-heading">
+            <div><span class="file-icon">▤</span><strong>Workflow editor</strong><span class="file-name">workflow.awl</span></div>
+            <span class="language-pill">AWL</span>
+          </div>
+          <div class="editor-wrap">
+            <div class="line-numbers" id="lineNumbers">1</div>
+            <textarea id="source" spellcheck="false" autocapitalize="off" autocomplete="off" aria-label="Workflow source">{{ default_workflow }}</textarea>
+          </div>
+          <div class="editor-footer">
+            <span>Language: API Workflow Language</span>
+            <span id="lineCount">1 line</span>
+          </div>
+          <div class="example-picker">
+            <label for="exampleSelect">Example workflows <span>8 built-in test cases</span></label>
+            <div class="example-picker-row">
+              <select id="exampleSelect" aria-label="Choose an example workflow">
+                {% for example in examples %}<option value="{{ example.id }}">{{ example.label }}</option>{% endfor %}
+              </select>
+              <button class="button button-secondary" id="loadExampleBtn" type="button">Load example</button>
+            </div>
+            <p>Choose valid input or a lexical, syntax, or semantic error case. Then click Validate workflow to run the real compiler checks.</p>
+          </div>
+          <div class="editor-actions">
+            <button class="button button-primary" id="validateBtn"><span>▶</span> Validate workflow</button>
+            <button class="button button-ghost" id="resetBtn" type="button">Reset default</button>
+            <button class="button button-ghost" id="clearBtn" type="button">Clear</button>
+          </div>
+          <div class="hint"><strong>Tip:</strong> Use <code>REQUEST</code> for API operations and <code>SAVE token FROM LOGIN.access_token</code> to save the demo token.</div>
+        </div>
+
+        <div class="results-column">
+          <div class="result-summary panel">
+            <div class="panel-heading"><strong>Validation report</strong><span class="report-tag" id="reportTag">READY</span></div>
+            <div id="emptyState" class="empty-state">
+              <div class="empty-icon">⌁</div>
+              <h3>Ready to analyze</h3>
+              <p>Click <b>Validate workflow</b> to run your source through the compiler pipeline.</p>
+            </div>
+            <div id="report" class="report hidden">
+              <div class="overall-result" id="overallResult">
+                <div class="result-symbol" id="overallIcon">✓</div>
+                <div><h3 id="overallTitle">Workflow valid</h3><p id="overallMessage"></p></div>
+              </div>
+              <div class="phase-list">
+                <div class="phase-row" id="lexicalRow"><span class="phase-number">01</span><div class="phase-copy"><strong>Lexical analysis</strong><small id="lexicalMessage"></small></div><span class="status" id="lexicalStatus">—</span></div>
+                <div class="phase-row" id="syntaxRow"><span class="phase-number">02</span><div class="phase-copy"><strong>Syntax analysis</strong><small id="syntaxMessage"></small></div><span class="status" id="syntaxStatus">—</span></div>
+                <div class="phase-row" id="semanticRow"><span class="phase-number">03</span><div class="phase-copy"><strong>Semantic analysis</strong><small id="semanticMessage"></small></div><span class="status" id="semanticStatus">—</span></div>
+              </div>
+              <div id="errorsSection" class="errors-section hidden">
+                <h4><span>⚠</span> Issues to fix</h4>
+                <ul id="errorList"></ul>
+              </div>
+              <div class="meta-grid">
+                <div><small>WORKFLOW</small><strong id="workflowName">—</strong></div>
+                <div><small>STATEMENTS</small><strong id="statementCount">—</strong></div>
+                <div><small>TOKENS</small><strong id="tokenCount">—</strong></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="ast-panel panel">
+            <div class="panel-heading"><strong>Abstract syntax tree</strong><span class="muted-label">AST</span></div>
+            <div id="astEmpty" class="ast-empty">The parsed workflow structure will appear here.</div>
+            <div id="astTree" class="ast-tree hidden"></div>
+          </div>
+        </div>
+      </section>
+
+      <section class="token-panel panel">
+        <div class="panel-heading"><strong>Token stream</strong><span class="muted-label">LEXER OUTPUT</span></div>
+        <p class="token-intro">Tokens recognized by the lexical analyzer. This section updates after validation.</p>
+        <div id="tokenStream" class="token-stream"><span class="token-placeholder">No tokens to display yet.</span></div>
+      </section>
+
+      <section class="info-grid">
+        <div class="info-card"><span class="info-icon purple">01</span><h3>Lexical analysis</h3><p>Recognizes keywords, identifiers and symbols; reports unexpected characters.</p></div>
+        <div class="info-card"><span class="info-icon blue">02</span><h3>Syntax analysis</h3><p>Checks workflow declarations, braces and statement grammar with a parser.</p></div>
+        <div class="info-card"><span class="info-icon green">03</span><h3>Semantic analysis</h3><p>Checks known operations, authentication order and saved variable usage.</p></div>
+      </section>
+    </main>
+    <footer>API Workflow Validator <span>•</span> Built with Python, Flask, HTML and CSS</footer>
+  </div>
+  <script>
+    const source = document.getElementById("source");
+    const lineNumbers = document.getElementById("lineNumbers");
+    const lineCount = document.getElementById("lineCount");
+    const validateBtn = document.getElementById("validateBtn");
+    const defaultSource = source.value;
+    const examples = {{ examples | tojson }};
+    const exampleSelect = document.getElementById("exampleSelect");
+
+    function updateLineNumbers() {
+      const count = source.value.split("\n").length;
+      lineNumbers.textContent = Array.from({length: count}, (_, i) => i + 1).join("\n");
+      lineCount.textContent = `${count} line${count === 1 ? "" : "s"}`;
+      lineNumbers.scrollTop = source.scrollTop;
+    }
+    source.addEventListener("input", updateLineNumbers);
+    source.addEventListener("scroll", () => { lineNumbers.scrollTop = source.scrollTop; });
+    updateLineNumbers();
+
+    function setPhase(name, phase) {
+      const row = document.getElementById(name + "Row");
+      const status = document.getElementById(name + "Status");
+      const message = document.getElementById(name + "Message");
+      row.classList.remove("phase-passed", "phase-failed", "phase-skipped");
+      const state = phase.status === "passed" ? "PASSED" : phase.status === "failed" ? "FAILED" : "SKIPPED";
+      row.classList.add("phase-" + (phase.status === "not_run" ? "skipped" : phase.status));
+      status.textContent = state;
+      status.className = "status " + (phase.status === "passed" ? "status-pass" : phase.status === "failed" ? "status-fail" : "status-skip");
+      message.textContent = phase.message || "Not run.";
+    }
+
+    function showError(message) {
+      document.getElementById("emptyState").classList.add("hidden");
+      document.getElementById("report").classList.remove("hidden");
+      document.getElementById("reportTag").textContent = "INPUT ERROR";
+      document.getElementById("overallResult").className = "overall-result overall-fail";
+      document.getElementById("overallIcon").textContent = "!";
+      document.getElementById("overallTitle").textContent = "Unable to validate";
+      document.getElementById("overallMessage").textContent = message;
+      ["lexical", "syntax", "semantic"].forEach(name => setPhase(name, {status:"not_run", message:"Not run."}));
+    }
+
+    function renderTokens(tokens) {
+      const container = document.getElementById("tokenStream");
+      container.replaceChildren();
+      if (!tokens || !tokens.length) {
+        container.innerHTML = '<span class="token-placeholder">No tokens were produced.</span>';
+        return;
+      }
+      tokens.forEach(token => {
+        const item = document.createElement("span");
+        item.className = "token-chip";
+        const kind = document.createElement("span");
+        kind.className = "token-kind";
+        kind.textContent = token.kind;
+        const value = document.createElement("span");
+        value.className = "token-value";
+        value.textContent = token.value === "\n" ? "\\n" : token.value;
+        item.append(kind, value);
+        item.title = `Line ${token.line}, column ${token.column}`;
+        container.appendChild(item);
+      });
+    }
+
+    function renderAst(items) {
+      const tree = document.getElementById("astTree");
+      tree.replaceChildren();
+      if (!items || !items.length) {
+        document.getElementById("astEmpty").classList.remove("hidden");
+        tree.classList.add("hidden");
+        return;
+      }
+      document.getElementById("astEmpty").classList.add("hidden");
+      tree.classList.remove("hidden");
+      const root = document.createElement("div");
+      root.className = "ast-root";
+      root.textContent = `Workflow(${document.getElementById("workflowName").textContent})`;
+      tree.appendChild(root);
+      items.forEach((item, index) => {
+        const row = document.createElement("div");
+        row.className = "ast-node";
+        const branch = document.createElement("span");
+        branch.className = "ast-branch";
+        branch.textContent = index === items.length - 1 ? "└──" : "├──";
+        const label = document.createElement("span");
+        label.className = item.kind === "REQUEST" ? "ast-request" : "ast-save";
+        if (item.kind === "REQUEST") {
+          label.textContent = `REQUEST ${item.operation}${item.variable ? " USING " + item.variable : ""}`;
+        } else {
+          label.textContent = `SAVE ${item.variable} FROM ${item.source_operation}.${item.field}`;
+        }
+        row.append(branch, label);
+        tree.appendChild(row);
+      });
+    }
+
+    function renderResult(data) {
+      document.getElementById("emptyState").classList.add("hidden");
+      document.getElementById("report").classList.remove("hidden");
+      const valid = data.valid;
+      document.getElementById("reportTag").textContent = valid ? "VALID" : "ISSUES FOUND";
+      document.getElementById("overallResult").className = "overall-result " + (valid ? "overall-pass" : "overall-fail");
+      document.getElementById("overallIcon").textContent = valid ? "✓" : "!";
+      document.getElementById("overallTitle").textContent = valid ? "Workflow is valid" : "Validation failed";
+      document.getElementById("overallMessage").textContent = valid
+        ? "All implemented compiler checks passed."
+        : "Review the phase results and correct the reported issues.";
+      setPhase("lexical", data.lexical);
+      setPhase("syntax", data.syntax);
+      setPhase("semantic", data.semantic);
+
+      document.getElementById("workflowName").textContent = data.workflow_name || "—";
+      document.getElementById("statementCount").textContent = data.statement_count ?? "—";
+      document.getElementById("tokenCount").textContent = data.lexical.tokens.length;
+
+      const errorsSection = document.getElementById("errorsSection");
+      const errorList = document.getElementById("errorList");
+      errorList.replaceChildren();
+      const errors = [];
+      if (data.lexical.status === "failed") errors.push(data.lexical.message);
+      if (data.syntax.status === "failed") errors.push(data.syntax.message);
+      if (data.semantic.errors) errors.push(...data.semantic.errors);
+      if (errors.length) {
+        errorsSection.classList.remove("hidden");
+        errors.forEach(error => {
+          const li = document.createElement("li");
+          li.textContent = error;
+          errorList.appendChild(li);
+        });
+      } else {
+        errorsSection.classList.add("hidden");
+      }
+      renderTokens(data.lexical.tokens);
+      renderAst(data.ast);
+    }
+
+    validateBtn.addEventListener("click", async () => {
+      validateBtn.disabled = true;
+      validateBtn.innerHTML = '<span class="spinner"></span> Analyzing...';
+      try {
+        const response = await fetch("/validate", {
+          method: "POST",
+          headers: {"Content-Type": "application/json"},
+          body: JSON.stringify({source: source.value})
+        });
+        const data = await response.json();
+        if (!response.ok || data.error) showError(data.error || "Validation request failed.");
+        else renderResult(data);
+      } catch (error) {
+        showError("Could not contact the local Flask server. Check that app.py is running.");
+      } finally {
+        validateBtn.disabled = false;
+        validateBtn.innerHTML = "<span>▶</span> Validate workflow";
+      }
+    });
+
+    document.getElementById("loadExampleBtn").addEventListener("click", () => {
+      const selected = examples.find(example => example.id === exampleSelect.value);
+      if (!selected) return;
+      source.value = selected.source;
+      updateLineNumbers();
+      source.focus();
+    });
+    document.getElementById("resetBtn").addEventListener("click", () => {
+      source.value = defaultSource;
+      exampleSelect.value = "valid_user_management";
+      updateLineNumbers();
+      source.focus();
+    });
+    document.getElementById("clearBtn").addEventListener("click", () => {
+      source.value = "";
+      updateLineNumbers();
+      source.focus();
+    });
+  </script>
+</body>
+</html>

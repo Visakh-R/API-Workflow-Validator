@@ -1,0 +1,7 @@
+# A protected request occurs after logout
+WORKFLOW AfterLogout {
+    REQUEST LOGIN
+    SAVE token FROM LOGIN.access_token
+    REQUEST LOGOUT USING token
+    REQUEST GET_PROFILE USING token
+}

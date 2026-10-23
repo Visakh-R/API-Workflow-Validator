@@ -1,0 +1,6 @@
+# Short valid login and logout workflow
+WORKFLOW SimpleSession {
+    REQUEST LOGIN
+    SAVE token FROM LOGIN.access_token
+    REQUEST LOGOUT USING token
+}

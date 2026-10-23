@@ -1,0 +1,4 @@
+# FLY_TO_MOON is not in the operation registry
+WORKFLOW UnknownAPI {
+    REQUEST FLY_TO_MOON
+}
